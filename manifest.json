@@ -1,10 +1,15 @@
 {
-  "short_name": "React TicTacToe",
+  "short_name": "TicTacToe",
   "name": "React TicTacToe",
   "icons": [
     {
-      "src": "Tic_tac_toe.ico",
+      "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
       "type": "image/png"
     }
   ],
