@@ -70,7 +70,13 @@ class Game extends React.Component {
           }]),
           stepNumber:history.length,
           xIsnext : !this.state.xIsnext,
+      },function(){
+        if(!this.state.xIsnext)
+          playOturn(this);
       });
+
+      sleep(100);
+
   }
 
   jumpTo(step){
@@ -119,6 +125,37 @@ class Game extends React.Component {
       </div>
     );
   }
+}
+
+function playOturn(game){
+  const history = game.state.history;
+  const current = history[history.length-1];
+  const squares = current.squares.slice();
+  if(calculateWinner(squares)){
+    return;
+  }
+  const vacantPlaces = squares.reduce((acc, val, idx) => {
+    if (!val) acc.push(idx);
+    return acc;
+  }, new Array());
+  game.setState((prevState)=> {
+    return {xIsnext : true}
+  });
+  game.forceUpdate();
+  game.handleClick(vacantPlaces[getRandomInt(0, vacantPlaces.length)]);
+}
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min)) + min; //The maximum is exclusive and the minimum is inclusive
+}
+
+function sleep(miliseconds) {
+   var currentTime = new Date().getTime();
+
+   while (currentTime + miliseconds >= new Date().getTime()) {
+   }
 }
 
 function calculateWinner(squares) {
