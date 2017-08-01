@@ -134,15 +134,11 @@ function playOturn(game){
   if(calculateWinner(squares)){
     return;
   }
-  const vacantPlaces = squares.reduce((acc, val, idx) => {
-    if (!val) acc.push(idx);
-    return acc;
-  }, new Array());
-  game.setState((prevState)=> {
-    return {xIsnext : true}
-  });
+  const vacantPlaces = getVacantPlaces(squares);
   game.forceUpdate();
-  game.handleClick(vacantPlaces[getRandomInt(0, vacantPlaces.length)]);
+  let perfectMove = minimax(squares.slice(),true).position;
+  console.log("Perfect Move: "+perfectMove);
+  game.handleClick(perfectMove);
 }
 
 function getRandomInt(min, max) {
@@ -156,6 +152,92 @@ function sleep(miliseconds) {
 
    while (currentTime + miliseconds >= new Date().getTime()) {
    }
+}
+/**
+  function minimax(node, depth, maximizingPlayer)
+     if depth = 0 or node is a terminal node
+         return the heuristic value of node
+
+     if maximizingPlayer
+         bestValue := −∞
+         for each child of node
+             v := minimax(child, depth − 1, FALSE)
+             bestValue := max(bestValue, v)
+         return bestValue
+
+     else    (* minimizing player *)
+         bestValue := +∞
+         for each child of node
+             v := minimax(child, depth − 1, TRUE)
+             bestValue := min(bestValue, v)
+         return bestValue 
+ **/
+function minimax(grid,isMaximizingPlayer){
+  const vacancies = getVacantPlaces(grid);
+  let winner = calculateWinner(grid);
+  if(vacancies.length === 0){
+    if(isMaximizingPlayer && winner==='O' || !isMaximizingPlayer && winner==='X')
+      return {score: 10,position: -1};
+    else if(isMaximizingPlayer && winner==='X' || !isMaximizingPlayer && winner==='O')
+      return {score: -10,position: -1};
+    else if(null===winner)
+      return {score: 0,position: -1};
+  }
+  if(isMaximizingPlayer){
+    let bestPlace = {score: -10,position: vacancies[0]}
+    for(let i=0;i<vacancies.length;i++){
+      let newGrid = grid.slice();
+      newGrid[vacancies[i]]='O';
+      let hval = minimax(newGrid,false);
+      if(hval.score>bestPlace.score){
+        bestPlace.score = hval.score;
+        bestPlace.position=vacancies[i];
+      }
+    }
+    return bestPlace;
+  }else {
+    let bestPlace = {score: 10,position: vacancies[0]}
+    for(let i=0;i<vacancies.length;i++){
+      let newGrid = grid.slice();
+      newGrid[vacancies[i]]='X';
+      let hval = minimax(newGrid,true);
+      if(hval.score < bestPlace.score){
+        bestPlace.score = hval.score;
+        bestPlace.position=vacancies[i];
+      }
+    }
+    return bestPlace;
+  }
+}
+/*function getPerfectMove(grid,isX){
+  let winner = calculateWinner(grid);
+  const vacancies = getVacantPlaces(grid);
+  if(0===vacancies.length || !winner){
+    return;
+  }
+  if(isX && 'X'=== winner){
+    return 10;
+  }
+  else if(isX && 'O'===winner){
+    return -10;
+  }else if(null === winner){
+    return 0;
+  }else {
+    for(let i=0;i<vacancies.length;i++){
+      let newGrid = grid.slice();
+      newGrid[vacancies[i]]=(isX)?'O':'X';
+      return getPerfectMove(newGrid,!isX);
+    }
+  }
+
+}*/
+
+var getVacantPlaces = (squares) => {
+  const vacantPlaces = squares.reduce((acc, val, idx) => {
+    if (!val) acc.push(idx);
+    return acc;
+  }, new Array());
+  return vacantPlaces;
 }
 
 function calculateWinner(squares) {
