@@ -136,7 +136,7 @@ function playOturn(game){
   }
   const vacantPlaces = getVacantPlaces(squares);
   game.forceUpdate();
-  let perfectMove = minimax(squares.slice(),true).position;
+  let perfectMove = minimax(squares.slice(),true,1).position;
   console.log("Perfect Move: "+perfectMove);
   game.handleClick(perfectMove);
 }
@@ -153,8 +153,18 @@ function sleep(miliseconds) {
    while (currentTime + miliseconds >= new Date().getTime()) {
    }
 }
+
+var optimalMove = null;
+
 /**
-  function minimax(node, depth, maximizingPlayer)
+ * 
+ * @param {Array<Number>} grid input 9 X 9 matrix of tictactoe board. 
+ * @param {boolean} isMaximizingPlayer boolean flag that denotes player is min or max. Set to true for O's turn in my case.
+ * @param {Number} depth counter for tracking depth of the game tree.
+ * 
+ * Uses Minimax algorithm for predicting the perfect move.Based roughly on following pseudocode:
+ * 
+ * function minimax(node, depth, maximizingPlayer)
      if depth = 0 or node is a terminal node
          return the heuristic value of node
 
@@ -171,72 +181,76 @@ function sleep(miliseconds) {
              v := minimax(child, depth − 1, TRUE)
              bestValue := min(bestValue, v)
          return bestValue 
- **/
-function minimax(grid,isMaximizingPlayer){
-  const vacancies = getVacantPlaces(grid);
+ */
+function minimax(grid,isMaximizingPlayer,depth){
+  let turnOf = (isMaximizingPlayer)?'O':'X';
+  console.log("Playing turn of : "+turnOf);
+  console.log("Starting minimax @ depth: "+depth);
+  let vacancies = getVacantPlaces(grid);
   let winner = calculateWinner(grid);
   if(vacancies.length === 0){
-    if(isMaximizingPlayer && winner==='O' || !isMaximizingPlayer && winner==='X')
+    if((isMaximizingPlayer && winner==='O') || (!isMaximizingPlayer && winner==='X'))
       return {score: 10,position: -1};
-    else if(isMaximizingPlayer && winner==='X' || !isMaximizingPlayer && winner==='O')
+    else if((isMaximizingPlayer && winner==='X') || (!isMaximizingPlayer && winner==='O'))
       return {score: -10,position: -1};
     else if(null===winner)
       return {score: 0,position: -1};
   }
+  let moves = [];
+  for(let i=0;i<vacancies.length;i++){
+    let move = {position: -1,score: 0};
+    grid[vacancies[i]] = (isMaximizingPlayer) ? 'O' : 'X';
+    move.score = minimax(grid,!isMaximizingPlayer,depth+1).score;
+    if(depth===1)
+      move.position = vacancies[i];
+    if((isMaximizingPlayer && 10===move.score) ||
+       (!isMaximizingPlayer && -10===move.score)){
+      console.log("Pruning other choices, best score got @: "+JSON.stringify(move));
+      /* if(null != optimalMove){
+        optimalMove = (move.score>optimalMove.score) ? move : optimalMove ;
+      }else {
+        optimalMove = move;
+      } */
+      optimalMove = move;
+      return move;
+    }
+    //if optimal move is already returned by the underlying call.
+    if(null!=optimalMove){
+      move.score = optimalMove;
+      return move;
+    } 
+    //reset the move made
+    grid[vacancies[i]] = null;
+    
+    moves.push(move);
+  }
+  let bestMove = {position: -1,score: 0};
   if(isMaximizingPlayer){
-    let bestPlace = {score: -10,position: vacancies[0]}
-    for(let i=0;i<vacancies.length;i++){
-      let newGrid = grid.slice();
-      newGrid[vacancies[i]]='O';
-      let hval = minimax(newGrid,false);
-      if(hval.score>bestPlace.score){
-        bestPlace.score = hval.score;
-        bestPlace.position=vacancies[i];
-      }
-    }
-    return bestPlace;
+    //start with minimum score and select max of moves
+    bestMove.score = -10;
+    bestMove = moves.reduce((previousBest,currentMove) => {
+      return (currentMove.score > previousBest.score) ? currentMove : previousBest;
+    },bestMove);
+    console.log("Best move for iteration : "+ JSON.stringify(bestMove));
   }else {
-    let bestPlace = {score: 10,position: vacancies[0]}
-    for(let i=0;i<vacancies.length;i++){
-      let newGrid = grid.slice();
-      newGrid[vacancies[i]]='X';
-      let hval = minimax(newGrid,true);
-      if(hval.score < bestPlace.score){
-        bestPlace.score = hval.score;
-        bestPlace.position=vacancies[i];
-      }
-    }
-    return bestPlace;
+    //start with maximum score and select min of moves
+    bestMove.score = 10;
+    bestMove = moves.reduce((previousBest,currentMove) => {
+      return (currentMove.score < previousBest.score) ? currentMove : previousBest;
+    },bestMove);
+    console.log("Best move for iteration : "+ JSON.stringify(bestMove));
   }
+  if(depth===1){
+    console.log("Moves calculated so far: "+JSON.stringify(moves));
+  }
+  return bestMove;
 }
-/*function getPerfectMove(grid,isX){
-  let winner = calculateWinner(grid);
-  const vacancies = getVacantPlaces(grid);
-  if(0===vacancies.length || !winner){
-    return;
-  }
-  if(isX && 'X'=== winner){
-    return 10;
-  }
-  else if(isX && 'O'===winner){
-    return -10;
-  }else if(null === winner){
-    return 0;
-  }else {
-    for(let i=0;i<vacancies.length;i++){
-      let newGrid = grid.slice();
-      newGrid[vacancies[i]]=(isX)?'O':'X';
-      return getPerfectMove(newGrid,!isX);
-    }
-  }
-
-}*/
 
 var getVacantPlaces = (squares) => {
   const vacantPlaces = squares.reduce((acc, val, idx) => {
     if (!val) acc.push(idx);
     return acc;
-  }, new Array());
+  }, []);
   return vacantPlaces;
 }
 
